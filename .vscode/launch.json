@@ -173,8 +173,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Jyt_test_0422_offline",
-                "--sub_name_online", "Jyt_test_0422_online",
+                "--sub_name_offline", "Jyt_test_0506_offline",
+                "--sub_name_online", "Jyt_test_0506_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "3", //"149",
@@ -192,6 +192,7 @@
                 "--use_pretrain", "True",
                 "--trial_pre", "120",
                 "--trial_pre_target", "20",
+                "--ip", "127.0.0.1",
             ],
             "env": {
                 "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
@@ -244,9 +245,9 @@
             "justMyCode": true,
             "args": [
                 "--seed", "42",
-                "--gpu_idx", "1",
-                "--sub_name_offline", "Jyt_test_0422_offline",
-                "--sub_name_online", "Jyt_test_0428_onlineSelected_4",
+                "--gpu_idx", "0",
+                "--sub_name_offline", "Jyt_test_0506_offline",
+                "--sub_name_online", "Jyt_test_0506_onlineSelected",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "3", //"149",
@@ -270,6 +271,7 @@
                 "--update_trial", "1",
                 "--update_wholeModel", "3",//"12",
                 "--total_trials", "64",
+                "--ip", "127.0.0.1",
             ],
             "env": {
                 "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"

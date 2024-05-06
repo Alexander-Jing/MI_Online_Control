@@ -326,6 +326,7 @@ def train_one_epoch_fea(model, optimizer, criterion, train_loader, device):
 #         print('Inside train_one_epoch, size of data_batch is {}'.format(data_batch.shape))
         #inputs: tensor on cpu, torch.Size([batch_size, sequence_length, num_features]) in the 30s, sequence _length=150， num_features=8
         #labels: tensor on cpu, torch.Size([batch_size])
+        labels_batch = labels_batch.type(torch.LongTensor)
         
         data_batch = data_batch.to(device) #put inputs to device
         labels_batch = labels_batch.to(device) #when performing training, need to also put labels to device to do loss calculation and backpropagation
@@ -394,6 +395,9 @@ def train_one_epoch_fea_distillation(model, optimizer, criterion, sub_oldclass_d
     
     loss_avg = RunningAverage()
     for i, ((oldcls_data_batch, oldcls_fea_batch), (newcls_fea_batch, newcls_labels_batch), (newdata_data_batch, newdata_label_bacth)) in enumerate(zip(sub_oldclass_datafea_distill_loader, sub_newclass_fealabel_distill_loader, sub_newdata_datalabel_loader)):
+        
+        newdata_label_bacth = newdata_label_bacth.type(torch.LongTensor)
+        newcls_labels_batch = newcls_labels_batch.type(torch.LongTensor)
         oldcls_data_batch = oldcls_data_batch.to(device) 
         oldcls_fea_batch = oldcls_fea_batch.to(device) 
         newcls_fea_batch = newcls_fea_batch.to(device)
@@ -491,6 +495,9 @@ def train_one_epoch_logitlabel_distillation(model, optimizer, criterion, train_l
     
     loss_avg = RunningAverage()
     for i, ((data_batch, labels_batch), (old_data_batch, old_logits_batch), (old_datalabel_batch, old_labels_batch)) in enumerate(zip(train_loader, old_datalogit_loader, old_datalabel_loader)):
+        
+        labels_batch = labels_batch.type(torch.LongTensor)
+        old_labels_batch = old_labels_batch.type(torch.LongTensor)
         data_batch = data_batch.to(device) 
         labels_batch = labels_batch.to(device) 
         old_data_batch = old_data_batch.to(device)
