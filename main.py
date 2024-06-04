@@ -17,7 +17,7 @@ import shutil
 import re
 
 from helpers import models
-from helpers.brain_data import Offline_read_csv
+from helpers.brain_data import Offline_read_csv, preprocess_eeg_data_online
 from helpers.utils import seed_everything, makedir_if_not_exist, plot_confusion_matrix, save_pickle, train_one_epoch, eval_model,\
      save_training_curves_FixedTrainValSplit, write_performance_info_FixedTrainValSplit, write_program_time, str2bool, save_best_validation_class_accuracy_offline,\
      load_best_validation_class_accuracy_offline, load_best_validation_path_offline
@@ -97,6 +97,11 @@ def SeverControlOnline(args_dict):
                 echo = decode[config_length:]
                 mat = echo.reshape((channels, window_length), order='F')  # 收到数据，用于输入模型
                 print("received data shape: ", mat.shape)
+                if args_dict.data_preprocessing:
+                    mat = preprocess_eeg_data_online(mat,channel_selection=True, \
+                                                    channel_list=args_dict.channel_list, target_channel_list=args_dict.target_channel_list, \
+                                                    max_scale=128)
+                print("preprocessed data shape: ", mat.shape)
                 scores = np.full((1,window_length), score)  
                 data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练
                 
@@ -151,6 +156,11 @@ def SeverControlOnline(args_dict):
                 echo = decode[config_length:]
                 mat = echo.reshape((channels, window_length), order='F')  # 收到数据，用于输入模型
                 print("received data shape: ", mat.shape)
+                if args_dict.data_preprocessing:
+                    mat = preprocess_eeg_data_online(mat,channel_selection=True, \
+                                                    channel_list=args_dict.channel_list, target_channel_list=args_dict.target_channel_list, \
+                                                    max_scale=128)
+                print("preprocessed data shape: ", mat.shape)
                 scores = np.full((1,window_length), score)  
                 data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练
                 
@@ -286,8 +296,15 @@ def SeverControlOnlineSelection(args_dict):
                 echo = decode[config_length:]
                 mat = echo.reshape((channels, window_length), order='F')  # 收到数据，用于输入模型
                 print("received data shape: ", mat.shape)
+                if args_dict.data_preprocessing:
+                    mat = np.expand_dims(mat,axis=0)
+                    mat = preprocess_eeg_data_online(mat,channel_selection=True, \
+                                                    channel_list=args_dict.channel_list, target_channel_list=args_dict.target_channel_list, \
+                                                    max_scale=128)
+                    mat = mat[0]
+                print("preprocessed data shape: ", mat.shape)
                 scores = np.full((1,window_length), score)  
-                data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练
+                data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练，注意，这里把scores单独作为一行也存进去了，实际数据不包括最后一行
                 
                 # 准备好相关参数
                 args_dict.order = order
@@ -341,9 +358,16 @@ def SeverControlOnlineSelection(args_dict):
                 echo = decode[config_length:]
                 mat = echo.reshape((channels, window_length), order='F')  # 收到数据，用于输入模型
                 print("received data shape: ", mat.shape)
+                if args_dict.data_preprocessing:
+                    mat = np.expand_dims(mat,axis=0)
+                    mat = preprocess_eeg_data_online(mat,channel_selection=True, \
+                                                    channel_list=args_dict.channel_list, target_channel_list=args_dict.target_channel_list, \
+                                                    max_scale=128)
+                    mat = mat[0]
+                print("preprocessed data shape: ", mat.shape)
                 scores = np.full((1,window_length), score)  
-                data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练
-                
+                data = np.vstack((mat,scores))  # 这部分用于存储数据以及后续的训练,注意，这里把scores单独作为一行也存进去了，实际数据不包括最后一行
+
                 # 对数据进行存储,这个文件夹存储的是在被试的每一个session中的每一个trial中的所有数据和score
                 save_folder = args_dict.Online_folder_path
                 if not os.path.exists(save_folder):
@@ -355,7 +379,7 @@ def SeverControlOnlineSelection(args_dict):
                     writer = csv.writer(file)
                     writer.writerows(data)
                     print(save_folder + sub_save_path + '  saved')
-
+                
                 # 准备好相关参数
                 args_dict.order = order
                 args_dict.motor_class = motor_class
@@ -471,7 +495,15 @@ def SeverControlOffline(args_dict):
                 sub_mat = np.split(mat, classes, axis=0)  # 根据类进行分开数据
                 for i, sub_class in enumerate(sub_mat):
                     sub_data = np.split(sub_class, windows, axis=0)
+                    
                     for j, sub_window in enumerate(sub_data):
+                        
+                        if args_dict.data_preprocessing:
+                            sub_window = np.expand_dims(sub_window,axis=0)
+                            sub_window = preprocess_eeg_data_online(sub_window,channel_selection=True, \
+                                                                    channel_list=args_dict.channel_list, target_channel_list=args_dict.target_channel_list, \
+                                                                    max_scale=128)
+                            sub_window = sub_window[0]
                         
                         sub_file_name = 'class_' + str(i) +'_window' + '_' + str(j) + '.csv'
                         
@@ -541,9 +573,10 @@ if __name__ == "__main__":
     parser.add_argument('--update_wholeModel', default=15, type=int, help="number of trails for longer updating")
     parser.add_argument('--total_trials', default=64, type=int, help="number of total trails for training")
     parser.add_argument('--alpha_distill', default=0.5, type=float, help="alpha of the distillation and cls loss func")
+    parser.add_argument('--data_preprocessing', default=False, type=str2bool, help="whether to use the data preprocessing method to normalized the data")
 
     parser.add_argument('--ip', default='172.18.22.21', type=str, help='the IP address')
-    parser.add_argument('--port', default=8888, type=int, help='the port')
+    parser.add_argument('--port', default=8880, type=int, help='the port')
     parser.add_argument('--mode', default='Online', type=str, help='choice of working mode: Offline or Online')
     args = parser.parse_args()
     
@@ -576,6 +609,7 @@ if __name__ == "__main__":
     update_wholeModel = args.update_wholeModel
     samples_online = args.samples_online
     total_trials = args.total_trials
+    data_preprocessing = args.data_preprocessing
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -615,14 +649,33 @@ if __name__ == "__main__":
     args_dict.use_pretrain = use_pretrain
     args_dict.trial_pre = trial_pre
     args_dict.trial_pre_target = trial_pre_target
-    args_dict.data_online_store = np.empty((0,32,512))  
-    args_dict.label_online_store = np.empty((0,))  # this is for the online update data, so that data will not be loaded again from the 1st trial when updating after trial n
     args_dict.update_trial = update_trial
     args_dict.alpha_distill = alpha_distill
     args_dict.update_wholeModel = update_wholeModel
     args_dict.samples_online = samples_online
     args_dict.total_trials = total_trials
-
+    args_dict.data_preprocessing = data_preprocessing
+    # data of our device
+    args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
+                    'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
+                    'T7','F8','F4','FZ','F3','F7','FP2','FP1'
+    ]
+    # selected data channels
+    args_dict.target_channel_list = [
+            'F7', 'F3', 'FZ', 'F4', 'F8',
+            'FT7','FC3','FCZ','FC4','FT8',
+            'T7', 'C3', 'CZ', 'C4', 'T8',
+            'TP7','CP3','CPZ','CP4','TP8',
+            'P7', 'P3', 'PZ', 'P4', 'P8',
+                    'O1', 'O2'
+    ]
+    if args_dict.data_preprocessing:
+        args_dict.data_online_store = np.empty((0,len(args_dict.target_channel_list)+1,512))  # data processing will add a new line
+        args_dict.label_online_store = np.empty((0,))  # this is for the online update data, so that data will not be loaded again from the 1st trial when updating after trial n
+    else:
+        args_dict.data_online_store = np.empty((0,len(args_dict.channel_list),512))  
+        args_dict.label_online_store = np.empty((0,))  # this is for the online update data, so that data will not be loaded again from the 1st trial when updating after trial n
+    
     seed_everything(seed)
     
     if mode == 'Offline':

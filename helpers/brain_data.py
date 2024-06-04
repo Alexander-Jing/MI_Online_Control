@@ -589,3 +589,38 @@ def Online_simulation_read_csv_windows(folder_path, sub_file, trial_pre, max_sca
 
     return sub_train_feature_array, sub_train_label_array.astype(int), sub_val_feature_array, sub_val_label_array.astype(int), \
         sub_train_feature_array_1, sub_train_label_array_1.astype(int)
+
+def preprocess_eeg_data_online(eeg_data, max_scale, channel_selection=False, channel_list=None, target_channel_list=None, high=1, low=-1, length=4, old_freq=256, new_freq=256):
+    # 选择目标通道
+    if channel_selection == True:
+        target_indices = [channel_list.index(ch) for ch in target_channel_list if ch in channel_list]
+        eeg_data = eeg_data[:, target_indices, :]
+    
+    eeg_data_processed = []
+
+    for i in range(eeg_data.shape[0]):
+        _eeg_data = eeg_data[i,:,:]
+        # 归一化数据
+        xmin = _eeg_data.min()
+        xmax = _eeg_data.max()
+        _eeg_data = (_eeg_data - xmin) / (xmax - xmin)
+        _eeg_data -= 0.5
+        _eeg_data += (high + low) / 2
+        _eeg_data *= (high - low)
+        
+        # 添加scale行
+        scale = 2 * (np.clip((_eeg_data.max() - _eeg_data.min()) / max_scale, 0, 1.0) - 0.5)
+        _eeg_data = np.vstack((_eeg_data, np.full((1, _eeg_data.shape[1]), scale)))
+        
+        # 插值到新的采样频率
+        if old_freq != new_freq:
+            old_time = np.linspace(0, length, old_freq*length)
+            new_time = np.linspace(0, length, new_freq*length)
+            interpolator = interpolate.interp1d(old_time, _eeg_data, axis=1)
+            _eeg_data = interpolator(new_time)
+
+        eeg_data_processed.append(_eeg_data)
+    
+    eeg_data_processed = np.array(eeg_data_processed)
+
+    return eeg_data_processed

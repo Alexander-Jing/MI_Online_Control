@@ -66,9 +66,8 @@ def Online_train_classifierLM_incremental_KD(args_dict):
     alpha_distill = args_dict.alpha_distill
     update_wholeModel = args_dict.update_wholeModel
     total_trials = args_dict.total_trials
-    data_preprocessing = args_dict.data_preprocessing 
-    channel_list = args_dict.channel_list
-    target_channel_list = args_dict.target_channel_list
+    
+
     # orders
     if order == 1:
         print('*********Online Predicting***********')
@@ -79,19 +78,11 @@ def Online_train_classifierLM_incremental_KD(args_dict):
     if use_pretrain:
         #encoder_to_use = ConvEncoderResBN(in_features=32, encoder_h=512)
         #encoder_to_use_output = ConvEncoderClsFea(output_h=128, dropout=dropout)
-        if data_preprocessing:
-            encoder_to_use = ConvEncoder3ResBN(in_features=len(target_channel_list)+1, encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
-            encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
-        else:
-            encoder_to_use = ConvEncoder3ResBN(in_features=len(channel_list), encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
-            encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
- 
+        encoder_to_use = ConvEncoder3ResBN(in_features=31, encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
+        encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
+
     else:
-        if data_preprocessing:
-            encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=len(target_channel_list)+1, output_h=128, dropout=dropout)
-        else:
-            encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=len(channel_list), output_h=128, dropout=dropout)
-        
+        encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=31, output_h=128, dropout=dropout)
     
     restore_file = best_validation_path
     #reload weights from restore_file is specified
@@ -360,10 +351,8 @@ def Online_train_classifierLM_incremental_KD(args_dict):
             sub_train_feature_update_target = []
             sub_train_label_update_target = []
             focalloss_alpha = []  # preparing for the focalloss alpha
-            if update_wholeModel!=8:
-                _update_wholeModel = 8
-            else:
-                _update_wholeModel = update_wholeModel
+            
+            _update_wholeModel = update_wholeModel
 
             for label in unique_labels:
                 indices = np.where(combined_label_array == label)[0]
@@ -403,7 +392,7 @@ def Online_train_classifierLM_incremental_KD(args_dict):
             sub_newdata_label_update = []
             indices = np.where(combined_label_array == train_label_now_)   
             #selected_indices = indices[0][-update_trial * samples_online:]    # this part should be changed as using the whole [-trial_pre:] data for training 
-            selected_indices = indices[0][-trial_pre:]  # using the method of collecting [-trial_pre:] data for optimization
+            selected_indices = indices[0][-trial_pre:]
             sub_newdata_data_update.append(combined_feature_array[selected_indices])
             sub_newdata_label_update.append(combined_label_array[selected_indices])
             sub_newdata_data_update = np.concatenate(sub_newdata_data_update, axis=0)

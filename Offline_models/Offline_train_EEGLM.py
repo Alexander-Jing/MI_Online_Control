@@ -38,7 +38,9 @@ def Offline_train_classifierLM(args_dict):
     batch_size = args_dict.batch_size
     unfreeze_encoder_offline = args_dict.unfreeze_encoder_offline
     use_pretrain = args_dict.use_pretrain
-    
+    data_preprocessing = args_dict.data_preprocessing 
+    channel_list = args_dict.channel_list
+    target_channel_list = args_dict.target_channel_list
     
     sub_train_feature_array, sub_train_label_array, sub_val_feature_array, sub_val_label_array = Offline_read_csv(Offline_folder_path, windows_num, proportion)
     
@@ -94,12 +96,19 @@ def Offline_train_classifierLM(args_dict):
             if use_pretrain:
                 #encoder_to_use = ConvEncoderResBN(in_features=32, encoder_h=512)
                 #encoder_to_use_output = ConvEncoderClsFea(output_h=128, dropout=dropout)
-                encoder_to_use = ConvEncoder3ResBN(in_features=32, encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
-                encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
-
+                if data_preprocessing:
+                    encoder_to_use = ConvEncoder3ResBN(in_features=len(target_channel_list)+1, encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
+                    encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
+                else:
+                    encoder_to_use = ConvEncoder3ResBN(in_features=len(channel_list), encoder_h=128, enc_width=((3,3),(3,3),(3,3)), enc_downsample=((1,1),(1,1),(1,1)), dropout=dropout)
+                    encoder_to_use_output = ConvEncoder_OutputClsFeaTL(in_features=128, output_h=128, width=((3,3),), stride=((1,1),), num_features_for_classification=int(15*64), dropout=dropout)
+        
             else:
-                encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=32, output_h=128, dropout=dropout)
-
+                if data_preprocessing:
+                    encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=len(target_channel_list)+1, output_h=128, dropout=dropout)
+                else:
+                    encoder_to_use_output = ConvEncoder3_ClsFeaTL(in_features=len(channel_list), output_h=128, dropout=dropout)
+                
             # reload weights from restore_file is specified
             if restore_file != 'None' and use_pretrain:
                 #restore_path = os.path.join(os.path.join(result_save_subject_checkpointdir, restore_file))
