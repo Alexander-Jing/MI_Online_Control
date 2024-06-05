@@ -389,7 +389,10 @@ def Online_train_classifierLM_incremental_KD(args_dict):
             sub_train_label_update_source = np.concatenate(sub_train_label_update_source, axis=0)
             sub_train_feature_update_target = np.concatenate(sub_train_feature_update_target, axis=0)
             sub_train_label_update_target = np.concatenate(sub_train_label_update_target, axis=0)
-            
+            print("training the whole model")
+            print("train size: {}".format(sub_train_feature_update_source.shape))
+            print("val size: {}".format(sub_train_feature_update_target.shape))
+
             # Form the new training sets
             source_train_set = brain_dataset(sub_train_feature_update_source, sub_train_label_update_source)
             target_train_set = brain_dataset(sub_train_feature_update_target, sub_train_label_update_target)
