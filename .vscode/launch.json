@@ -247,7 +247,7 @@
                 "--seed", "42",
                 "--gpu_idx", "1",
                 "--sub_name_offline", "Jyt_test_0601_offline_2",
-                "--sub_name_online", "Jyt_test_0601_online_5",
+                "--sub_name_online", "Jyt_test_0601_online_6_sessions",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "120", //"149",
