@@ -137,6 +137,59 @@ class EEGNetTest(nn.Module):
 
         return normalized_probabilities #for EEGNet and DeepConvNet, directly use nn.NLLLoss() as criterion
 
+# We used the EEGNet-8,2 as the model for online updating experiment, where F1=8, D=2 and F2=D*F1
+# The kernel size is set as (1, 32)  according to the methods in:  
+#    Ma X, Qiu S, Wei W, et al. Deep channel-correlation network for motor imagery decoding from the same limb[J]. IEEE Transactions on Neural Systems and Rehabilitation Engineering, 2019, 28(1): 297-306.
+# Conv2d with Constraint is used(https://github.com/braindecode/braindecode/blob/master/braindecode/models/eegnet.py)
+class EEGNetFea(nn.Module):
+    def __init__(self, feature_size=30, num_timesteps=512, num_classes=3, F1=8, D=2, F2=16, dropout=0.5):
+
+        super(EEGNetFea, self).__init__()
+
+        #Temporal convolution
+        self.firstConv = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, 32), stride=1, padding=(0, 15), bias=False), 
+            #'same' padding: used by the author; 
+            #kernel_size=(1,32):  author recommend kernel length be half of the sampling rate
+            nn.BatchNorm2d(num_features=F1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+
+        self.depthwiseConv = nn.Sequential(
+            Conv2dWithConstraint(F1, F1 * D, kernel_size=(feature_size, 1), stride=(1, 1), groups=F1, bias=False),   # group convolution is used for the goal of fewer parameters
+            #'valid' padding: used by the author;
+            #kernel_size = (feature_size, 1): used by the author
+            
+            nn.BatchNorm2d(F1 * D, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.ELU(), #used by author
+            nn.AvgPool2d(kernel_size=(1, 4)), #kernel_size=(1,4) used by author
+            nn.Dropout(p=dropout) 
+        )
+
+        #depthwise convolution follow by pointwise convolution (pointwise convolution is just Conv2d with 1x1 kernel)
+        self.separableConv = nn.Sequential(
+            nn.Conv2d(F1 * D, F2, kernel_size=(1, 16), stride=1, padding=(0, 8), groups=F1*D, bias=False),
+            nn.Conv2d(F2, F2, kernel_size=1, bias=False),
+            nn.BatchNorm2d(F2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+#             nn.ReLU(),
+            nn.ELU(), #use by author
+            nn.AvgPool2d(kernel_size=(1, 8)), #kernel_size=(1,8): used by author
+            nn.Dropout(p=dropout)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(in_features=int(num_timesteps/32*F2), out_features=num_classes, bias=True)
+        )
+
+    def forward(self, x):
+        x = x.unsqueeze(1)
+        x = self.firstConv(x.float())  # unsqueeze the x dim
+        x = self.depthwiseConv(x)
+        features = self.separableConv(x)
+        _features = features.squeeze(2)
+        logits = self.classifier(features)    
+
+        return logits, _features # use the cross-entrophy loss
 
 #the author used kernel_size=(1,3) stride=(1,3) for all the MaxPool2d layer. Here we use less agressive down-sampling, because our input chunk has only 200 timesteps
 

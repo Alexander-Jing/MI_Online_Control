@@ -261,6 +261,7 @@ def Offline_read_csv(folder_path, windows, proportion):
     val_label = []
 
     # Iterate over all files in the folder
+    #_file_list = sorted(os.listdir(folder_path))
     for filename in os.listdir(folder_path):
         # Check if the filename follows the format class_i_window_j.csv
         if filename.startswith("class_") and filename.endswith(".csv"):
@@ -338,11 +339,12 @@ def Online_read_csv(folder_path, session, trial):
 
 def Online_read_csv_selection(folder_path, session, trial, selected_num):
     """
-    read the data from Online data collection 
+    read the data from Online data collection for all windows in a trial
     parameters:
         folder_path: the path of the online collected data
         session: the selected session 
-        trial: the selected trial 
+        trial: the selected trial
+        selected_num: num of selected samples 
     returns:
         train_list, train_label: the np.array of the collected data and labels for training 
         scores: the np.array of the collected scores
@@ -382,6 +384,52 @@ def Online_read_csv_selection(folder_path, session, trial, selected_num):
 
     return np.array(train_list), np.array(train_label), np.array(scores)
 
+def Online_read_csv_selection_session(folder_path, session):
+    """
+    read the data from Online data collection for all windows in trials before the selected session
+    parameters:
+        folder_path: the path of the online collected data
+        session: the selected session  
+    returns:
+        train_list, train_label: the np.array of the collected data and labels for training 
+        scores: the np.array of the collected scores
+        filenames: the list of filenames corresponding to the selected data
+    """
+    data_dict = {}
+
+    # Iterate over all files in the folder
+    for filename in os.listdir(folder_path):
+        # Extract information from the filename
+        parts = filename.split('_')
+        label = int(parts[1])
+        session_num = int(parts[3])
+        trial_num = int(parts[5])
+        score = float( (parts[9]).split('.csv')[0] )
+
+        # Check if session and trial match
+        if session_num < session:
+            # Read the data
+            data = pd.read_csv(os.path.join(folder_path, filename), header=None).values
+            # Extract the first n-1 rows of data
+            data_sub = data[:-1]
+            # Store data, label, and filename in the dictionary with score and filename as the key
+            data_dict[(score, filename)] = (data_sub, label)
+
+    # Sort the dictionary by score in descending order and select the top 'selected_num' entries
+    # the 'selected_num' is set directly the number of the length of dictionary data_dict
+    selected_num = len(data_dict)
+    selected_entries = sorted(data_dict.items(), key=lambda x: x[0][0], reverse=True)[:selected_num]
+
+    # Extract the data, labels, and filenames from the selected entries
+    train_list = [entry[1][0] for entry in selected_entries]
+    train_label = [entry[1][1] for entry in selected_entries]
+    scores = [entry[0][0] for entry in selected_entries]
+    filenames = [entry[0][1] for entry in selected_entries]
+    
+    for filename in filenames:
+        print(filename)
+
+    return np.array(train_list), np.array(train_label), np.array(scores)
 
 def Online_simulation_read_csv(folder_path, sub_file, trial_pre, proportion=0.8):
     # 读取.mat文件
@@ -609,7 +657,7 @@ def preprocess_eeg_data_online(eeg_data, max_scale, channel_selection=False, cha
         _eeg_data *= (high - low)
         
         # 添加scale行
-        scale = 2 * (np.clip((_eeg_data.max() - _eeg_data.min()) / max_scale, 0, 1.0) - 0.5)
+        scale = 2 * (np.clip((xmax - xmin) / max_scale, 0, 1.0) - 0.5)
         _eeg_data = np.vstack((_eeg_data, np.full((1, _eeg_data.shape[1]), scale)))
         
         # 插值到新的采样频率

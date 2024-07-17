@@ -16,7 +16,7 @@ import time
 from helpers import models
 from helpers import brain_data
 from helpers.utils import seed_everything, makedir_if_not_exist, plot_confusion_matrix, save_pickle, train_one_epoch, eval_model, save_training_curves_FixedTrainValSplit, write_performance_info_FixedTrainValSplit, write_program_time
-from Offline_models.Offline_train_EEGNet import Offline_train_classifier
+from Offline_models.Offline_train_EEGNet import Offline_train_classifierEEGNet
 from Online_models.Online_train_EEGNet import Online_train_classifier
 from Offline_synthesizing_results.synthesize_hypersearch_for_a_subject import synthesize_hypersearch
 

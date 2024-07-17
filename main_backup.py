@@ -593,9 +593,6 @@ if __name__ == "__main__":
     parser.add_argument('--total_trials', default=64, type=int, help="number of total trails for training")
     parser.add_argument('--alpha_distill', default=0.5, type=float, help="alpha of the distillation and cls loss func")
     parser.add_argument('--data_preprocessing', default=False, type=str2bool, help="whether to use the data preprocessing method to normalized the data")
-    parser.add_argument('--session_manual', default=False, type=str2bool, help="if interrupted by the communication errors, use the session_manual mode")
-    parser.add_argument('--session_manual_id', default=0, type=int, help="if interrupted by the communication errors, use the session_manual mode, input the session id,\
-                         the whole model online updating will start at the beginning of the id")
 
     parser.add_argument('--ip', default='172.18.22.21', type=str, help='the IP address')
     parser.add_argument('--port', default=8880, type=int, help='the port')
@@ -632,8 +629,6 @@ if __name__ == "__main__":
     samples_online = args.samples_online
     total_trials = args.total_trials
     data_preprocessing = args.data_preprocessing
-    session_manual = args.session_manual
-    session_manual_id = args.session_manual_id
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -679,9 +674,6 @@ if __name__ == "__main__":
     args_dict.samples_online = samples_online
     args_dict.total_trials = total_trials
     args_dict.data_preprocessing = data_preprocessing
-    args_dict.session_manual = session_manual
-    args_dict.session_manual_id = session_manual_id
-
     # data of our device
     args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
                     'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
@@ -826,23 +818,17 @@ if __name__ == "__main__":
         args_dict.lr = lr
         args_dict.dropout = dropout
 
-        if not session_manual:
-            restore_file = best_validation_path
-            # move the best model from the offline experiments results
-            Offline_path_encoder = os.path.join(Offline_result_save_rootdir, sub_name_offline, restore_file, 'checkpoint', 'best_model.pt')  
+        restore_file = best_validation_path
+        # move the best model from the offline experiments results
+        Offline_path_encoder = os.path.join(Offline_result_save_rootdir, sub_name_offline, restore_file, 'checkpoint', 'best_model.pt')  # using the name online_model.statedict for all the online manipulations
+       
+        makedir_if_not_exist(os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint'))
+        restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'online_model.pt')  # using the name online_model.statedict for all the online manipulations
+        args_dict.restore_path_encoder = restore_path_encoder
         
-            makedir_if_not_exist(os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint'))
-            restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'best_model_{}.pt'.format(0))  # using the name online_model.pt for all the online manipulations
-            args_dict.restore_path_encoder = restore_path_encoder
-            
-            # Copy Offline path to restore path
-            shutil.copy(Offline_path_encoder, restore_path_encoder)
-            print('Successfully copied {} to {}'.format(Offline_path_encoder, restore_path_encoder))
-        else:
-            restore_file = best_validation_path
-            restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'best_model_{}.pt'.format(session_manual_id-1))  
-            args_dict.restore_path_encoder = restore_path_encoder
-            print('manual mode, using the best model last session: {}'.format(restore_path_encoder))
+        # Copy Offline path to restore path
+        shutil.copy(Offline_path_encoder, restore_path_encoder)
+        print('Successfully copied {} to {}'.format(Offline_path_encoder, restore_path_encoder))
         
         sub_train_feature_array_offline, sub_train_label_array_offline, \
             sub_val_feature_array_offline, sub_val_label_array_offline = Offline_read_csv(os.path.join(Offline_folder_path, sub_name_offline), windows_num, proportion)
