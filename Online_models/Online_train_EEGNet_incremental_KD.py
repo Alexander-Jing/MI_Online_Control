@@ -92,7 +92,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
             model.load_state_dict(torch.load(restore_path_encoder))
             model = model.to(device)
             print("initially load model: ", restore_path_encoder) 
-        if session_manual and trial%update_wholeModel == 1:
+        if session_manual and trial%update_wholeModel == 1 and session == session_manual_id:
             model.load_state_dict(torch.load(restore_path_encoder))
             model = model.to(device)
             print("initially load model: ", restore_path_encoder)
@@ -135,6 +135,13 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                 model.load_state_dict(torch.load(load_model_path_encoder))
                 model = model.to(device)
                 print("load model parameter: ", load_model_path_encoder)
+            if session_manual and trial%update_wholeModel==1 and session!=session_manual_id:
+                load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
+                if not os.path.exists(load_model_path_encoder):
+                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+                model.load_state_dict(torch.load(load_model_path_encoder))
+                model = model.to(device)
+                print("load model parameter: ", load_model_path_encoder)
 
         
         predict_accu, class_predictions_array, labels_array, probabilities_array, _, accuracy_per_class = eval_model_confusion_matrix_fea(model, sub_cv_val_loader, device)
@@ -159,11 +166,11 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         # combine the data from the previous trials
         #train_list, train_label, scores = Online_read_csv(Online_folder_path,session,trial)
         train_list, train_label, scores = Online_read_csv_selection(Online_folder_path,session,trial,samples_online)
-
+        print("load {} samples in session {}, trial {}".format(train_list.shape[0], session, trial))
         #args_dict.data_online_store.append(train_list)
         #args_dict.label_online_store.append(train_label)
         
-        if session_manual and trial%update_wholeModel==1:
+        if session_manual and trial%update_wholeModel==1 and session==session_manual_id:
             session_list, session_label, _ = Online_read_csv_selection_session(Online_folder_path, session_manual_id)
             args_dict.data_online_store = np.concatenate((args_dict.data_online_store, session_list), axis=0)
             args_dict.label_online_store = np.concatenate((args_dict.label_online_store, session_label), axis=0)
