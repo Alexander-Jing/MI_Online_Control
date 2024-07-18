@@ -149,11 +149,11 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         probabilities_array = softmax(probabilities_array.reshape((1,-1)))
         probabilities_label = probabilities_array[0, labels_array[0]]
         save_results_online(class_predictions_array, labels_array, result_save_subject_resultanalysisdir)
-        if motor_class != 0.0:
-            args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
-            args_dict.predict_accuracies.append(predict_accu)
-            args_dict.accuracies_per_class.append(accuracy_per_class)
-        else:
+        # save the average peridiction of each class
+        args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
+        args_dict.predict_accuracies.append(predict_accu)
+        args_dict.accuracies_per_class.append(accuracy_per_class)
+        if motor_class == 0.0:
             args_dict.accuracies_per_class_iterations_Rest.append([motor_class, predict_accu/100])
 
         return class_predictions_array, probabilities_label, probabilities_array
@@ -294,12 +294,14 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         sub_oldclass_datafea_distill_loader = torch.utils.data.DataLoader(sub_oldclass_datafea_distill, batch_size=batch_size_online, shuffle=True)
         sub_oldclass_datalogits_distill_loader = torch.utils.data.DataLoader(sub_oldclass_datalogits_distill, batch_size=batch_size_online, shuffle=True)
         sub_oldclass_datalabels_distill_loader = torch.utils.data.DataLoader(sub_oldclass_datalabels_distill, batch_size=batch_size_online, shuffle=True)
-        
+        print("old class exemplar sets size {}".format(sub_oldclass_data_distill.shape[0]))
+
         # generate the new data loader
         sub_newclass_fea_distill = np.concatenate(new_feas_exemplars, axis=0)
         sub_newclass_labels_distill = np.concatenate(new_labels_exemplars, axis=0)
         sub_newclass_fealabel_distill = brain_dataset(sub_newclass_fea_distill, sub_newclass_labels_distill)
         sub_newclass_fealabel_distill_loader = torch.utils.data.DataLoader(sub_newclass_fealabel_distill, batch_size=batch_size_online, shuffle=True)
+        print("new class exemplar sets size {}".format(sub_newclass_fea_distill.shape[0]))
 
         # update the online stored data
         args_dict.data_online_store = np.concatenate((args_dict.data_online_store, train_list), axis=0)
@@ -397,9 +399,9 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
             if (trial) % (update_trial) == 0: 
                 accuracy_per_class_iter = compute_total_accuracy_per_class(args_dict.accuracies_per_class_iterations)
                 args_dict.accuracy_per_class_iters.append(accuracy_per_class_iter)
-                print(accuracy_per_class_iter)
                 accuracy_per_class_iter_Rest = compute_total_accuracy_per_class(args_dict.accuracies_per_class_iterations_Rest)
-            
+                print([accuracy_per_class_iter_Rest[0],accuracy_per_class_iter[1],accuracy_per_class_iter[2]])
+
                 #training loop
                 # set the best validation accuracy(val_2)
                 if train_label_now_[0] != 0:
@@ -469,7 +471,8 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                     best_train_accuracy = train_accuracy
 
                     torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session)))
-
+                    print("save best model in trial {}, session {}, model file: {}".format(trial, session, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))))
+                    
                     result_save_dict['bestepoch_val_accuracy'] = val_accuracy
                     """for cls_i in range(accuracy_per_class.shape[0]):
                         result_save_dict['class_accuracy_' + str(cls_i)] = accuracy_per_class[cls_i]"""
@@ -506,7 +509,8 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
 
                         #torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model.statedict'))
                         torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session)))
-                        
+                        print("save best whole model in trial {}, session {}, model file: {}".format(trial, session, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))))
+                    
                         result_save_dict['bestepoch_val_accuracy'] = whole_model_val_accuracy
             
             #save training curve 

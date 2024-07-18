@@ -860,7 +860,7 @@ if __name__ == "__main__":
         accuracies_per_class_iterations.append([1, 0])
         accuracies_per_class_iterations.append([2, 0])
         accuracies_per_class_iterations_Rest = []
-        accuracies_per_class_iterations_Rest.append([0, accuracy_per_class_init[0]])
+        accuracies_per_class_iterations_Rest.append([0, 0])
         args_dict.predict_accuracies = predict_accuracies
         args_dict.accuracies_per_class = accuracies_per_class
         args_dict.accuracies_per_class_iterations = accuracies_per_class_iterations
