@@ -2542,6 +2542,31 @@ def save_results_online(class_predictions_array, labels_array, result_save_subje
     # 保存结果
     results_df.to_csv(results_file, index=False)
 
+def save_accuracies_per_class_online(args_dict, file_name):
+    # save the three values: 
+    # args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
+    # args_dict.predict_accuracies.append(predict_accu)
+    # args_dict.accuracies_per_class.append(accuracy_per_class)
+    # the file_name is in the form of .pkl file
+    file_name = os.path.join(file_name, 'accuracies_per_class_online.pkl')
+    with open(file_name, 'wb') as f:
+        pickle.dump({
+            'accuracies_per_class_iterations': args_dict.accuracies_per_class_iterations,
+            'predict_accuracies': args_dict.predict_accuracies,
+            'accuracies_per_class': args_dict.accuracies_per_class,
+            'accuracies_per_class_iterations_Rest':args_dict.accuracies_per_class_iterations_Rest
+        }, f)
+
+def load_accuracies_per_class_online(file_name):
+    # load the three values: 
+    # args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
+    # args_dict.predict_accuracies.append(predict_accu)
+    # args_dict.accuracies_per_class.append(accuracy_per_class)
+    # the file_name is in the form of .pkl file
+    file_name = os.path.join(file_name, 'accuracies_per_class_online.pkl')
+    with open(file_name, 'rb') as f:
+        data = pickle.load(f)
+    return data 
 
 def calculate_accuracy_per_class_online(result_save_subject_resultanalysisdir, best_validation_class_accuracy):
     # 定义结果文件的路径

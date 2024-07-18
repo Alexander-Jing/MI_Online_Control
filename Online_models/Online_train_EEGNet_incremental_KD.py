@@ -17,7 +17,7 @@ from helpers.brain_data import Offline_read_csv, brain_dataset, Online_read_csv,
 from helpers.utils import seed_everything, makedir_if_not_exist, plot_confusion_matrix, save_pickle, \
     train_one_epoch, train_update, eval_model, eval_model_confusion_matrix_fea, save_training_curves_FixedTrainValSplit, \
         write_performance_info_FixedTrainValSplit, write_program_time, train_one_epoch_MMD_Weights, train_one_epoch_MMD, eval_model_fea, train_one_epoch_fea, \
-            compute_total_accuracy_per_class, softmax, save_results_online, calculate_accuracy_per_class_online, load_best_validation_class_accuracy_offline,\
+            compute_total_accuracy_per_class, softmax, save_results_online, save_accuracies_per_class_online, load_accuracies_per_class_online, calculate_accuracy_per_class_online, load_best_validation_class_accuracy_offline,\
             load_best_validation_path_offline, eval_model_fea_exemplars_distillation_datafea_logitlabel, MultiClassFocalLoss, train_one_epoch_logitlabel_distillation, train_one_epoch_fea_distillation,\
             accuracy_save2csv, accuracy_iteration_plot, accuracy_perclass_save2csv, accuracy_perclass_iteration_plot
         
@@ -149,6 +149,17 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         probabilities_array = softmax(probabilities_array.reshape((1,-1)))
         probabilities_label = probabilities_array[0, labels_array[0]]
         save_results_online(class_predictions_array, labels_array, result_save_subject_resultanalysisdir)
+        
+        # if need, load the existing accuracies of each class from the last session, take care we only record the accuracy_per_class values when a session finishes 
+        if session_manual and trial%update_wholeModel == 1 and session == session_manual_id and window==0:
+            _accuracy_per_class_online = load_accuracies_per_class_online(result_save_subject_resultanalysisdir)
+            args_dict.accuracies_per_class_iterations = _accuracy_per_class_online['accuracies_per_class_iterations']
+            args_dict.predict_accuracies = _accuracy_per_class_online['predict_accuracies']
+            args_dict.accuracies_per_class = _accuracy_per_class_online['accuracies_per_class']
+            args_dict.accuracies_per_class_iterations_Rest = _accuracy_per_class_online['accuracies_per_class_iterations_Rest']
+            print("manual mode, load the existing accuracies for each class: {} recordings each".format(len(args_dict.accuracies_per_class_iterations)))
+            print("trial {}, session {}".format(trial, session))
+        
         # save the average peridiction of each class
         args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
         args_dict.predict_accuracies.append(predict_accu)
@@ -412,6 +423,15 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                     best_val_accuracy = 0.8 * 100 * accuracy_per_class_iter_Rest[0]
                     best_train_accuracy = 0.8 * 100 * (accuracy_per_class_iter[1] + accuracy_per_class_iter[2]\
                                                                     )/2
+
+                if trial % update_wholeModel == 0:
+                    # if a session ends, record all the accuracy_per_class values
+                    # save the three values: 
+                    # args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
+                    # args_dict.predict_accuracies.append(predict_accu)
+                    # args_dict.accuracies_per_class.append(accuracy_per_class)
+                    save_accuracies_per_class_online(args_dict, result_save_subject_resultanalysisdir)
+                    print("save the existing accuracies for each class: {} recordings each".format(len(args_dict.accuracies_per_class_iterations)))
 
             is_best = False
 
