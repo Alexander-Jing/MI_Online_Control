@@ -19,7 +19,7 @@ from helpers.utils import seed_everything, makedir_if_not_exist, plot_confusion_
         write_performance_info_FixedTrainValSplit, write_program_time, train_one_epoch_MMD_Weights, train_one_epoch_MMD, eval_model_fea, train_one_epoch_fea, \
             compute_total_accuracy_per_class, softmax, save_results_online, save_accuracies_per_class_online, load_accuracies_per_class_online, calculate_accuracy_per_class_online, load_best_validation_class_accuracy_offline,\
             load_best_validation_path_offline, eval_model_fea_exemplars_distillation_datafea_logitlabel, MultiClassFocalLoss, train_one_epoch_logitlabel_distillation, train_one_epoch_fea_distillation,\
-            accuracy_save2csv, accuracy_iteration_plot, accuracy_perclass_save2csv, accuracy_perclass_iteration_plot, eval_model_fea_classPrototypes, train_one_epoch_fea_MMDContrastive_targetcls_iter
+            accuracy_save2csv, accuracy_iteration_plot, accuracy_perclass_save2csv, accuracy_perclass_iteration_plot
         
 from helpers.utils import Offline_write_performance_info_FixedTrainValSplit, Offline_write_performance_info_FixedTrainValSplit_ConfusionMatrix
 
@@ -70,8 +70,6 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
     target_channel_list = args_dict.target_channel_list
     session_manual = args_dict.session_manual
     session_manual_id = args_dict.session_manual_id
-    para_m = args_dict.para_m
-    cons_rate = args_dict.cons_rate
 
     # orders
     if order == 1:
@@ -451,6 +449,16 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
             """
             
             _n_epoch_online = n_epoch_online
+            
+            """criterion = nn.MSELoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+            print("feature updating")
+            for epoch in trange(_n_epoch_online, desc='online feature distillation'):
+                
+                average_loss_this_epoch = train_one_epoch_fea_distillation(model, optimizer, criterion, sub_oldclass_datafea_distill_loader, sub_newclass_fealabel_distill_loader, sub_newdata_datalabel_loader, device, alpha=0.5)
+                #val_accuracy, _, _, _, _, accuracy_per_class = eval_model_confusion_matrix_fea(model, target_train_loader, device)
+                #train_accuracy, _, _ , _ = eval_model_fea(model, target_train_loader, device)
+            """
 
             criterion = nn.CrossEntropyLoss()
             #optimizer = torch.optim.Adam(model.encoder_output.encoder.Encoder_Cls.parameters(), lr=lr)  # only update the cls part
@@ -482,18 +490,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                     best_val_accuracy = val_accuracy
                     best_train_accuracy = train_accuracy
 
-                    # using the momentum updating method
-                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
-                    if not os.path.exists(load_model_path_encoder):
-                        load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
-                    original_state_dict = torch.load(load_model_path_encoder)
-                    current_state_dict = model.state_dict()  # load the last model and the current model parameters
-                    new_state_dict = {}
-                    for key in current_state_dict.keys():
-                        new_state_dict[key] = para_m * original_state_dict[key] + (1-para_m) * current_state_dict[key]  # updating the model in a momentum way
-
-                    torch.save(new_state_dict, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session)))
-
+                    torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session)))
                     print("save best model in trial {}, session {}, model file: {}".format(trial, session, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))))
                     
                     result_save_dict['bestepoch_val_accuracy'] = val_accuracy
@@ -515,12 +512,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                 _n_epoch_online = n_epoch_online * 2
                 
                 for epoch in trange(_n_epoch_online, desc='online classification update whole model'):
-                    # initially calculate the memory bank for source and target data in each epoch 
-                    memoryBank_source, memoryBank_target = eval_model_fea_classPrototypes(model, source_train_loader, target_train_loader, device, classes=3)    
-                
-                    #average_loss_this_epoch = train_one_epoch_fea(model, optimizer, criterion, source_train_loader, device)
-                    average_loss_this_epoch = train_one_epoch_fea_MMDContrastive_targetcls_iter(model, optimizer, criterion, source_train_loader, target_train_loader, memoryBank_source, memoryBank_target, device, cons_beta=cons_rate)
-                    
+                    average_loss_this_epoch = train_one_epoch_fea(model, optimizer, criterion, source_train_loader, device)
                     whole_model_val_accuracy, _, _, _, _, whole_model_accuracy_per_class = eval_model_confusion_matrix_fea(model, target_train_loader, device)
                     whole_model_train_accuracy, _, _ , _ = eval_model_fea(model, source_train_loader, device)
                     

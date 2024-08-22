@@ -582,7 +582,8 @@ if __name__ == "__main__":
     parser.add_argument('--Online_result_save_rootdir', default='./Online_experiments', help="Directory containing the experiment models")
     parser.add_argument('--batch_size_online', default=16, type=int, help="number of batch size for online updating")
     parser.add_argument('--samples_online', default=9, type=int, help="number of samples chosen for online updating")
-    parser.add_argument('--best_validation_path', default='lr0.001_dropout0.5', type=str, help="path of the best validation performance model")
+    parser.add_argument('--validation_path_manual', default=False, type=str2bool, help="whether to set the path of the best validation performance model")
+    parser.add_argument('--best_validation_path', default='lr0.001_dropout0.5', type=str, help="if validation_path_manual, set path of the best validation performance model")
     parser.add_argument('--unfreeze_encoder_offline', default=True, type=str2bool, help="whether to unfreeze the encoder params during offline training process")
     parser.add_argument('--unfreeze_encoder_online', default=True, type=str2bool, help="whether to unfreeze the encoder params during online training process")
     parser.add_argument('--use_pretrain', default=False, type=str2bool, help="whether to use the pretrain models")
@@ -592,6 +593,8 @@ if __name__ == "__main__":
     parser.add_argument('--update_wholeModel', default=15, type=int, help="number of trails for longer updating")
     parser.add_argument('--total_trials', default=64, type=int, help="number of total trails for training")
     parser.add_argument('--alpha_distill', default=0.5, type=float, help="alpha of the distillation and cls loss func")
+    parser.add_argument('--para_m', default=0.99, type=float, help="hyper parameter for momentum updating")
+    parser.add_argument('--cons_rate', default=0.01, type=float, help="hyper parameter for constractive loss")
     parser.add_argument('--data_preprocessing', default=False, type=str2bool, help="whether to use the data preprocessing method to normalized the data")
     parser.add_argument('--session_manual', default=False, type=str2bool, help="if interrupted by the communication errors, use the session_manual mode")
     parser.add_argument('--session_manual_id', default=0, type=int, help="if interrupted by the communication errors, use the session_manual mode, input the session id,\
@@ -620,6 +623,7 @@ if __name__ == "__main__":
     port = args.port
     mode = args.mode
     batch_size_online = args.batch_size_online
+    validation_path_manual = args.validation_path_manual
     best_validation_path = args.best_validation_path
     unfreeze_encoder_offline = args.unfreeze_encoder_offline
     unfreeze_encoder_online = args.unfreeze_encoder_online
@@ -634,6 +638,8 @@ if __name__ == "__main__":
     data_preprocessing = args.data_preprocessing
     session_manual = args.session_manual
     session_manual_id = args.session_manual_id
+    para_m = args.para_m
+    cons_rate = args.cons_rate
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -681,6 +687,8 @@ if __name__ == "__main__":
     args_dict.data_preprocessing = data_preprocessing
     args_dict.session_manual = session_manual
     args_dict.session_manual_id = session_manual_id
+    args_dict.para_m = para_m
+    args_dict.cons_rate = cons_rate
 
     # data of our device
     args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
@@ -727,6 +735,10 @@ if __name__ == "__main__":
         summary_save_dir_offline = os.path.join(experiment_dir_offline, 'hypersearch_summary')
         best_validation_class_accuracy = load_best_validation_class_accuracy_offline(summary_save_dir_offline)
         best_validation_path = load_best_validation_path_offline(summary_save_dir_offline)
+        if validation_path_manual:
+            best_validation_path = args.best_validation_path
+            print("set best_validation_path manually: {}".format(best_validation_path))
+
         args_dict.best_validation_path = best_validation_path
         args_dict.best_validation_class_accuracy = best_validation_class_accuracy
         
@@ -789,7 +801,7 @@ if __name__ == "__main__":
         args_dict.Rest_output_data_exemplars, args_dict.Rest_output_feas_exemplars, args_dict.Rest_output_logits_exemplars, args_dict.Rest_output_label_exemplars = [],[],[],[]
         args_dict.MI1_output_data_exemplars, args_dict.MI1_output_feas_exemplars, args_dict.MI1_output_logits_exemplars, args_dict.MI1_output_label_exemplars = [],[],[],[]
         args_dict.MI2_output_data_exemplars, args_dict.MI2_output_feas_exemplars, args_dict.MI2_output_logits_exemplars, args_dict.MI2_output_label_exemplars = [],[],[],[]
-                    
+          
         #SeverControlOnline(args_dict)
         SeverControlOnlineSelection(args_dict)
     
@@ -811,6 +823,11 @@ if __name__ == "__main__":
         summary_save_dir_offline = os.path.join(experiment_dir_offline, 'hypersearch_summary')
         best_validation_class_accuracy = load_best_validation_class_accuracy_offline(summary_save_dir_offline)
         best_validation_path = load_best_validation_path_offline(summary_save_dir_offline)
+        # set the best validation path manually if need
+        if validation_path_manual:
+            best_validation_path = args.best_validation_path
+            print("set best_validation_path manually: {}".format(best_validation_path))
+        
         args_dict.best_validation_path = best_validation_path
         args_dict.best_validation_class_accuracy = best_validation_class_accuracy
         
@@ -861,6 +878,7 @@ if __name__ == "__main__":
         accuracies_per_class_iterations.append([2, 0])
         accuracies_per_class_iterations_Rest = []
         accuracies_per_class_iterations_Rest.append([0, 0])
+        # accuracies_per_class_iterations_Rest.append([0, accuracy_per_class_init[0]])
         args_dict.predict_accuracies = predict_accuracies
         args_dict.accuracies_per_class = accuracies_per_class
         args_dict.accuracies_per_class_iterations = accuracies_per_class_iterations
@@ -870,7 +888,7 @@ if __name__ == "__main__":
         args_dict.Rest_output_data_exemplars, args_dict.Rest_output_feas_exemplars, args_dict.Rest_output_logits_exemplars, args_dict.Rest_output_label_exemplars = [],[],[],[]
         args_dict.MI1_output_data_exemplars, args_dict.MI1_output_feas_exemplars, args_dict.MI1_output_logits_exemplars, args_dict.MI1_output_label_exemplars = [],[],[],[]
         args_dict.MI2_output_data_exemplars, args_dict.MI2_output_feas_exemplars, args_dict.MI2_output_logits_exemplars, args_dict.MI2_output_label_exemplars = [],[],[],[]
-                    
+
         #SeverControlOnline(args_dict)
         SeverControlOnlineSelection(args_dict)
 

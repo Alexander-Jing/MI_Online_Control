@@ -353,6 +353,141 @@ def train_one_epoch_fea(model, optimizer, criterion, train_loader, device):
     average_loss_this_epoch = loss_avg()
     return average_loss_this_epoch
 
+def train_one_epoch_fea_MMDContrastive_targetcls_iter(model, optimizer, criterion, source_loader, target_loader, memoryBank_source, memoryBank_target, device, cons_beta=0.01):
+    # based on the contrastive learning based method in:
+    # D. Zhang, H. Li and J. Xie, Unsupervised and semi-supervised domain adaptation networks considering both global knowledge and prototype-based local class information for Motor Imagery Classification. Neural Networks (2024), doi: https://doi.org/10.1016/j.neunet.2024.106497. 
+    
+    model.train()
+    # Convert memoryBank_source to torch tensor and move to device
+    memoryBank_source = torch.from_numpy(memoryBank_source).to(device)
+    memoryBank_target = torch.from_numpy(memoryBank_target).to(device)
+
+    # considering that data in the source is much larger than that in target, so we use itertools for target data expansion 
+    target_loader = itertools.cycle(target_loader)
+
+    loss_avg = RunningAverage()
+    for i, ((source_data, source_labels), (target_data, target_labels)) in enumerate(zip(source_loader, target_loader)):
+        # check target_data size
+        if len(target_data) != len(source_data):
+            _batch_size = min(len(target_data), len(source_data))
+            source_data = source_data[0:_batch_size,:,:]
+            source_labels = source_labels[0:_batch_size]
+            target_data = target_data[0:_batch_size,:,:]
+            target_labels = target_labels[0:_batch_size]
+        
+        source_data = source_data.to(device)
+        source_labels = source_labels.to(device)
+        target_data = target_data.to(device)
+        target_labels = target_labels.to(device)
+
+        # Forward pass
+        source_output, source_features = model(source_data)
+        target_output, target_features = model(target_data)
+
+        # Calculate classification loss
+        #cls_loss = criterion(source_output, source_labels)
+        
+        cls_loss = criterion(source_output, source_labels) + criterion(target_output, target_labels)
+
+        # Calculate MMD loss
+        mmd_loss = mmd_loss_func(source_features, target_features)
+
+        # calculate the Source contrastive loss
+        _source_innerdot = torch.einsum('bct,nct->bn', source_features, memoryBank_source)
+        source_cons_loss = criterion(_source_innerdot, source_labels)
+        # calculate the Interactive contrastive loss for the Target
+        _target_innerdot = torch.einsum('bct,nct->bn', target_features, memoryBank_source)
+        target_cons_loss = criterion(_target_innerdot, target_labels)
+
+        # Total loss is the sum of classification loss and MMD loss
+        #loss = cls_loss + mmd_loss + source_cons_loss + target_cons_loss
+        loss_transfer = mmd_loss + source_cons_loss + target_cons_loss
+        loss = cls_loss + cons_beta * loss_transfer
+
+        # Update running average of the loss
+        loss_avg.update(loss.item())
+
+        # Clear previous gradients
+        optimizer.zero_grad()
+
+        # Calculate gradient
+        loss.backward()
+
+        # Perform parameters update
+        optimizer.step()
+    
+    average_loss_this_epoch = loss_avg()
+    return average_loss_this_epoch
+
+def train_one_epoch_fea_MMDContrastive_targetcls_iter_2(model, optimizer, criterioncls, criterioncons, criterionMMD, source_loader, target_loader, memoryBank_source, memoryBank_target, device, cons_beta=0.01):
+    # based on the contrastive learning based method in:
+    # D. Zhang, H. Li and J. Xie, Unsupervised and semi-supervised domain adaptation networks considering both global knowledge and prototype-based local class information for Motor Imagery Classification. Neural Networks (2024), doi: https://doi.org/10.1016/j.neunet.2024.106497. 
+    # using the implementation of MMDLoss from https://github.com/jindongwang/transferlearning/blob/master/code/distance/mmd_pytorch.py
+
+    model.train()
+    # Convert memoryBank_source to torch tensor and move to device
+    memoryBank_source = torch.from_numpy(memoryBank_source).to(device)
+    memoryBank_target = torch.from_numpy(memoryBank_target).to(device)
+
+    # considering that data in the source is much larger than that in target, so we use itertools for target data expansion 
+    target_loader = itertools.cycle(target_loader)
+
+    loss_avg = RunningAverage()
+    for i, ((source_data, source_labels), (target_data, target_labels)) in enumerate(zip(source_loader, target_loader)):
+        # check target_data size
+        if len(target_data) != len(source_data):
+            _batch_size = min(len(target_data), len(source_data))
+            source_data = source_data[0:_batch_size,:,:]
+            source_labels = source_labels[0:_batch_size]
+            target_data = target_data[0:_batch_size,:,:]
+            target_labels = target_labels[0:_batch_size]
+        
+        source_data = source_data.to(device)
+        source_labels = source_labels.to(device)
+        target_data = target_data.to(device)
+        target_labels = target_labels.to(device)
+
+        # Forward pass
+        source_output, source_features = model(source_data)
+        target_output, target_features = model(target_data)
+
+        # Calculate classification loss
+        #cls_loss = criterion(source_output, source_labels)
+        
+        cls_loss = criterioncls(source_output, source_labels) + criterioncls(target_output, target_labels)
+
+        # Calculate MMD loss, the implementation from https://github.com/jindongwang/transferlearning/blob/master/code/distance/mmd_pytorch.py
+        b, c, t = source_features.shape  # needs a flattening
+        mmd_loss = criterionMMD(source_features.view(b, -1), target_features.view(b, -1))  
+
+        # calculate the Source contrastive loss
+        _source_innerdot = torch.einsum('bct,nct->bn', source_features, memoryBank_source)
+        source_cons_loss = criterioncons(_source_innerdot, source_labels)
+        # calculate the Interactive contrastive loss for the Target
+        _target_innerdot = torch.einsum('bct,nct->bn', target_features, memoryBank_source)
+        target_cons_loss = criterioncons(_target_innerdot, target_labels)
+
+        # Total loss is the sum of classification loss and MMD loss
+        #loss = cls_loss + mmd_loss + source_cons_loss + target_cons_loss
+        loss_transfer = mmd_loss + source_cons_loss + target_cons_loss
+        loss = cls_loss + cons_beta * loss_transfer
+
+        # Update running average of the loss
+        loss_avg.update(loss.item())
+
+        # Clear previous gradients
+        optimizer.zero_grad()
+
+        # Calculate gradient
+        loss.backward()
+
+        # Perform parameters update
+        optimizer.step()
+    
+    average_loss_this_epoch = loss_avg()
+    return average_loss_this_epoch
+
+
 def train_one_epoch_fea_selfpace(model, optimizer, criterion, train_loader, device, lambda_pace, lambda_pace_new):
     model.train()
     
@@ -2233,6 +2368,81 @@ def eval_model_fea_exemplars_distillation_datafea_logitlabel(model, eval_loader,
 
     return output_data_exemplars, output_feas_exemplars, output_logits_exemplars, output_label_exemplars
 
+def eval_model_fea_classPrototypes(model, source_train_loader_prototypes, target_train_loader_prototypes, device, classes=3):
+    # generate the class prototypes referring the works in:
+    # D. Zhang, H. Li and J. Xie, Unsupervised and semi-supervised domain adaptation networks considering both global knowledge and prototype-based local class information for Motor Imagery Classification. Neural Networks (2024), doi: https://doi.org/10.1016/j.neunet.2024.106497. 
+    model.eval()
+    feas_source = None 
+    labels_source = None
+    feas_target = None
+    labels_target = None
+    memoryBank_source = None
+    memoryBank_target = None
+
+    # collect data from each batch of source data
+    with torch.no_grad(): 
+        for data_batch_source, labels_batch_source in source_train_loader_prototypes:
+            
+            data_batch_source = data_batch_source.to(device)
+            labels_batch_source = labels_batch_source.to(device)
+            _, fea_batch_source = model(data_batch_source)
+            
+            if feas_source is None:
+                feas_source = fea_batch_source.detach().cpu().numpy()
+            else:
+                feas_source = np.concatenate((feas_source, fea_batch_source.detach().cpu().numpy()), axis=0)  # using no gradient data to calculate the prototypes
+            
+            if labels_source is None:
+                labels_source = labels_batch_source.detach().cpu().numpy()
+            else:
+                labels_source = np.concatenate((labels_source, labels_batch_source.detach().cpu().numpy()), axis = 0)
+        
+        # calculate the prototypes of the source data 
+        for class_idx in range(classes):
+            # collect data from each class 
+            indices_source = np.where(labels_source==class_idx)[0]
+            _class_feas_source = feas_source[indices_source]
+            # calculate the prototypes and store them in the memory bank
+            _class_prototype_source = np.mean(_class_feas_source, axis=0)
+            _class_prototype_source = np.expand_dims(_class_prototype_source, axis=0)
+
+            if memoryBank_source is None:
+                memoryBank_source = _class_prototype_source
+            else:
+                memoryBank_source = np.concatenate((memoryBank_source, _class_prototype_source),axis=0)
+
+        for data_batch_target, labels_batch_target in target_train_loader_prototypes:
+            
+            data_batch_target = data_batch_target.to(device)
+            labels_batch_target = labels_batch_target.to(device)
+            _, fea_bacth_target = model(data_batch_target)
+
+            if feas_target is None:
+                feas_target = fea_bacth_target.detach().cpu().numpy()
+            else:
+                feas_target = np.concatenate((feas_target, fea_bacth_target.detach().cpu().numpy()), axis=0)  # using no gradient data to calculate the prototypes
+            
+            if labels_target is None:
+                labels_target = labels_batch_target.detach().cpu().numpy()
+            else:
+                labels_target = np.concatenate((labels_target, labels_batch_target.detach().cpu().numpy()), axis = 0)
+        # calculate the prototypes of the target data 
+        for class_idx in range(classes):
+            # collect data from each class 
+            indices_target = np.where(labels_target==class_idx)[0]
+            _class_feas_target = feas_target[indices_target]
+            # calculate the prototypes and store them in the memory bank
+            _class_prototype_target = np.mean(_class_feas_target, axis=0)
+            _class_prototype_target = np.expand_dims(_class_prototype_target, axis=0)
+
+            if memoryBank_target is None:
+                memoryBank_target = _class_prototype_target
+            else:
+                memoryBank_target = np.concatenate((memoryBank_target, _class_prototype_target),axis=0)
+    
+    return memoryBank_source, memoryBank_target
+
+
 
 class EarlyStopping(object):
     def __init__(self, monitor: str = 'val_loss', mode: str = 'min', patience: int = 1):
@@ -2700,3 +2910,52 @@ class PolyLoss(torch.nn.Module):
         ce = self.criterion(output, target)
         pt = one_hot(target, num_classes=self.num_classes) * self.softmax(output)
         return (ce + self.epsilon * (1.0 - pt.sum(dim=-1))).mean()
+    
+class MMD_loss(nn.Module):
+    # from https://github.com/jindongwang/transferlearning/blob/master/code/distance/mmd_pytorch.py
+    # the implementation of mmd loss from Jingdong Wang, a Senior Researcher at Microsoft Research Asia (MSRA).
+    def __init__(self, kernel_type='rbf', kernel_mul=2.0, kernel_num=5):
+        super(MMD_loss, self).__init__()
+        self.kernel_num = kernel_num
+        self.kernel_mul = kernel_mul
+        self.fix_sigma = None
+        self.kernel_type = kernel_type
+
+    def guassian_kernel(self, source, target, kernel_mul=2.0, kernel_num=5, fix_sigma=None):
+        n_samples = int(source.size()[0]) + int(target.size()[0])
+        total = torch.cat([source, target], dim=0)
+        total0 = total.unsqueeze(0).expand(
+            int(total.size(0)), int(total.size(0)), int(total.size(1)))
+        total1 = total.unsqueeze(1).expand(
+            int(total.size(0)), int(total.size(0)), int(total.size(1)))
+        L2_distance = ((total0-total1)**2).sum(2)
+        if fix_sigma:
+            bandwidth = fix_sigma
+        else:
+            bandwidth = torch.sum(L2_distance.data) / (n_samples**2-n_samples)
+        bandwidth /= kernel_mul ** (kernel_num // 2)
+        bandwidth_list = [bandwidth * (kernel_mul**i)
+                          for i in range(kernel_num)]
+        kernel_val = [torch.exp(-L2_distance / bandwidth_temp)
+                      for bandwidth_temp in bandwidth_list]
+        return sum(kernel_val)
+
+    def linear_mmd2(self, f_of_X, f_of_Y):
+        loss = 0.0
+        delta = f_of_X.float().mean(0) - f_of_Y.float().mean(0)
+        loss = delta.dot(delta.T)
+        return loss
+
+    def forward(self, source, target):
+        if self.kernel_type == 'linear':
+            return self.linear_mmd2(source, target)
+        elif self.kernel_type == 'rbf':
+            batch_size = int(source.size()[0])
+            kernels = self.guassian_kernel(
+                source, target, kernel_mul=self.kernel_mul, kernel_num=self.kernel_num, fix_sigma=self.fix_sigma)
+            XX = torch.mean(kernels[:batch_size, :batch_size])
+            YY = torch.mean(kernels[batch_size:, batch_size:])
+            XY = torch.mean(kernels[:batch_size, batch_size:])
+            YX = torch.mean(kernels[batch_size:, :batch_size])
+            loss = torch.mean(XX + YY - XY - YX)
+            return loss
