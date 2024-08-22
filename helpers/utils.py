@@ -22,6 +22,8 @@ from einops import rearrange, repeat
 from torch import nn, einsum
 from einops.layers.torch import Rearrange
 
+import itertools
+
 
 def load_pickle(result_dir, filename):
     with open(os.path.join(result_dir, filename), 'rb') as f:
