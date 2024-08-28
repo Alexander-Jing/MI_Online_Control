@@ -325,7 +325,7 @@
                 "--seed", "42",
                 "--gpu_idx", "0",
                 "--sub_name_offline", "Jyt_test_0725_offline",
-                "--sub_name_online", "Jyt_test_0824_online",
+                "--sub_name_online", "Jyt_test_0828_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -352,9 +352,11 @@
                 "--validation_path_manual", "False",
                 "--best_validation_path", "best_validation_path",
                 "--data_preprocessing", "True",
-                "--session_manual", "True",
-                "--session_manual_id", "8",
+                "--session_manual", "False",
+                "--session_manual_id", "1",
                 "--ip", "127.0.0.1",
+                "--para_m", "0.9",
+                "--cons_rate", "1.0",
             ],
             "env": {
                 "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
