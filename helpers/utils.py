@@ -338,7 +338,7 @@ def train_one_epoch_fea(model, optimizer, criterion, train_loader, device):
         
         #calculate loss
         #loss: tensor (scalar) on gpu, torch.Size([])
-        loss = criterion(output_batch, labels_batch)
+        loss = criterion(output_batch, labels_batch.type(torch.long))
         
         #update running average of the loss
         loss_avg.update(loss.item())
