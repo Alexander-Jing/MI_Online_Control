@@ -643,8 +643,11 @@ def train_one_epoch_logitlabel_distillation(model, optimizer, criterion, train_l
         ce_loss = criterion(output_batch, labels_batch)
 
         # 计算旧的类别数据的蒸馏损失函数
-        soft_target = F.softmax(old_output_batch / T, dim=1)
-        distillation_loss_logit = F.kl_div(F.log_softmax(old_logits_batch / T, dim=1), soft_target, reduction='batchmean') * (T**2)
+        #soft_target = F.softmax(old_output_batch / T, dim=1)
+        #distillation_loss_logit = F.kl_div(F.log_softmax(old_logits_batch / T, dim=1), soft_target, reduction='batchmean') * (T**2)
+        soft_teacher = F.softmax(old_logits_batch / T, dim=1)  # the old saved logits as the teacher
+        soft_student = F.log_softmax(old_output_batch / T, dim=1)  # the new caculated logits as the student for training 
+        distillation_loss_logit = F.kl_div(soft_student, soft_teacher, reduction='sum') * (T**2) / soft_student.shape[0]
         old_labels_batch = old_labels_batch.type(torch.long)  # the old labels batch data should be set as torch.long
         distillation_loss_label = criterion(old_output_label, old_labels_batch)
 

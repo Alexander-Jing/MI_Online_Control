@@ -596,6 +596,7 @@ if __name__ == "__main__":
     parser.add_argument('--para_m', default=0.99, type=float, help="hyper parameter for momentum updating")
     parser.add_argument('--cons_rate', default=0.01, type=float, help="hyper parameter for constractive loss")
     parser.add_argument('--data_preprocessing', default=False, type=str2bool, help="whether to use the data preprocessing method to normalized the data")
+    parser.add_argument('--channel_selection', default=False, type=str2bool, help="whether to change the channel selection settings in data preprocessing method to normalized the data")
     parser.add_argument('--session_manual', default=False, type=str2bool, help="if interrupted by the communication errors, use the session_manual mode")
     parser.add_argument('--session_manual_id', default=0, type=int, help="if interrupted by the communication errors, use the session_manual mode, input the session id,\
                          the whole model online updating will start at the beginning of the id")
@@ -640,6 +641,7 @@ if __name__ == "__main__":
     session_manual_id = args.session_manual_id
     para_m = args.para_m
     cons_rate = args.cons_rate
+    channel_selection = args.channel_selection
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -689,12 +691,24 @@ if __name__ == "__main__":
     args_dict.session_manual_id = session_manual_id
     args_dict.para_m = para_m
     args_dict.cons_rate = cons_rate
+    args_dict.channel_selection = channel_selection
 
-    # data of our device
-    args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
-                    'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
-                    'T7','F8','F4','FZ','F3','F7','FP2','FP1'
-    ]
+    # data of our device, needs to be changed if matlab channels modified
+    if channel_selection:
+        # the real experiment shows that, some electros cause high impedance, which greatly affect the results, 
+        # so we choose the channels on the matlab, so data from matlab are already selected in channels, 
+        # the args_dict.channel_list in server should also be modified, OZ, M1, M2, Fp1, Fp2 are removed 
+        args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','TP7','TP8',
+                        'O2','O1','P8','P4','PZ','P3','P7','T8','C4','CZ','C3',
+                        'T7','F8','F4','FZ','F3','F7'
+        ]
+    else:
+        # the origin channel settings in matlab, if not selecting channels in matlab, data from matlab use the original settings
+        args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
+                'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
+                'T7','F8','F4','FZ','F3','F7','FP2','FP1'
+        ]
+
     # selected data channels
     args_dict.target_channel_list = [
             'F7', 'F3', 'FZ', 'F4', 'F8',
