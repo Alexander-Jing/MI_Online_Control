@@ -243,12 +243,13 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                     sub_exemplars = torch.utils.data.DataLoader(_sub_exemplars, batch_size=sub_train_feature_exemplars.shape[0], shuffle=False)
                     MI2_output_data_exemplars, MI2_output_feas_exemplars, MI2_output_logits_exemplars, MI2_output_label_exemplars = eval_model_fea_exemplars_distillation_datafea_logitlabel(model, sub_exemplars, device, trial_pre)
             
-            print("mean-of-exemplars generated trial: {}".format(trial))
-            print("mean-of-exemplars generated size: {}".format(len(args_dict.Rest_output_label_exemplars)))
+            
             args_dict.Rest_output_data_exemplars, args_dict.Rest_output_feas_exemplars, args_dict.Rest_output_logits_exemplars, args_dict.Rest_output_label_exemplars = Rest_output_data_exemplars, Rest_output_feas_exemplars, Rest_output_logits_exemplars, Rest_output_label_exemplars
             args_dict.MI1_output_data_exemplars, args_dict.MI1_output_feas_exemplars, args_dict.MI1_output_logits_exemplars, args_dict.MI1_output_label_exemplars = MI1_output_data_exemplars, MI1_output_feas_exemplars, MI1_output_logits_exemplars, MI1_output_label_exemplars
             args_dict.MI2_output_data_exemplars, args_dict.MI2_output_feas_exemplars, args_dict.MI2_output_logits_exemplars, args_dict.MI2_output_label_exemplars = MI2_output_data_exemplars, MI2_output_feas_exemplars, MI2_output_logits_exemplars, MI2_output_label_exemplars
-                    
+            print("mean-of-exemplars generated trial: {}".format(trial))
+            print("mean-of-exemplars generated size: {}".format(len(args_dict.Rest_output_label_exemplars)))
+
         # set the instance class for updating 
         train_label_now_ = np.unique(train_label[-1])
         train_label_exemplars = train_label_now_%2 + 1  # if label is 1, generate label of 2, else if label is 2, generate label of 1
@@ -547,7 +548,9 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                         print("save best whole model in trial {}, session {}, model file: {}".format(trial, session, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))))
                     
                         result_save_dict['bestepoch_val_accuracy'] = whole_model_val_accuracy
-                        args_dict.memoryBank_sources[session] = memoryBank_source
+                        args_dict.memoryBank_sources[str(session)] = memoryBank_source
+                        #memoryBank_sources = args_dict.memoryBank_sources
+                        #print(memoryBank_sources)
             
             #save training curve 
             save_training_curves_FixedTrainValSplit('training_curve.png', result_save_subject_trainingcurvedir, epoch_train_loss, epoch_train_accuracy, epoch_validation_accuracy)
