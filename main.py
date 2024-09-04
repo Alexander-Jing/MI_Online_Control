@@ -692,6 +692,7 @@ if __name__ == "__main__":
     args_dict.para_m = para_m
     args_dict.cons_rate = cons_rate
     args_dict.channel_selection = channel_selection
+    args_dict.memoryBank_sources = {}
 
     # data of our device, needs to be changed if matlab channels modified
     if channel_selection:

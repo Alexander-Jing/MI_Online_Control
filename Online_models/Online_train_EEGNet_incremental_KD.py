@@ -509,6 +509,13 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                 criterion = nn.CrossEntropyLoss()
                 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
                 
+                # load the new saved model (add for test)
+                load_model_path_encoder_whole = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
+                if not os.path.exists(load_model_path_encoder_whole):
+                    load_model_path_encoder_whole = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+                model.load_state_dict(torch.load(load_model_path_encoder_whole))
+                model = model.to(device)
+
                 whole_model_is_best = False
                 whole_model_best_val_accuracy = 0
                 
@@ -540,6 +547,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                         print("save best whole model in trial {}, session {}, model file: {}".format(trial, session, os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))))
                     
                         result_save_dict['bestepoch_val_accuracy'] = whole_model_val_accuracy
+                        args_dict.memoryBank_sources[session] = memoryBank_source
             
             #save training curve 
             save_training_curves_FixedTrainValSplit('training_curve.png', result_save_subject_trainingcurvedir, epoch_train_loss, epoch_train_accuracy, epoch_validation_accuracy)
@@ -563,6 +571,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
                 accuracy_iteration_plot(args_dict.predict_accuracies, result_save_subjectdir)
                 accuracy_perclass_save2csv(args_dict.accuracy_per_class_iters, result_save_subjectdir)
                 accuracy_perclass_iteration_plot(args_dict.accuracy_per_class_iters, result_save_subjectdir)
+                save_pickle(result_save_subjectdir, "memoryBank_sources.pkl", args_dict.memoryBank_sources)  # save the memory bank of source data in each session
 
 
     
