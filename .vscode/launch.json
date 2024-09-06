@@ -327,7 +327,7 @@
                 "--seed", "42",
                 "--gpu_idx", "0",
                 "--sub_name_offline", "Jyt_test_0905_offline",
-                "--sub_name_online", "Jyt_test_0905_online",
+                "--sub_name_online", "Jyt_test_0905_online_simu_3",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -360,6 +360,7 @@
                 "--ip", "127.0.0.1",
                 "--para_m", "0.1",
                 "--cons_rate", "1.0",//"1.0",//"0.0", //"0.5",//"0.1",
+                "--update_model", "True",
             ],
             "env": {
                 "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"

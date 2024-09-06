@@ -589,6 +589,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_pretrain', default=False, type=str2bool, help="whether to use the pretrain models")
     parser.add_argument('--trial_pre', default=120, type=int, help="the data used to train the model online each class")
     parser.add_argument('--trial_pre_target', default=20, type=int, help="whether to use the pretrain models")
+    parser.add_argument('--update_model', default=True, type=str2bool, help="whether to update the model")
     parser.add_argument('--update_trial', default=1, type=int, help="number of trails for instant updating")
     parser.add_argument('--update_wholeModel', default=15, type=int, help="number of trails for longer updating")
     parser.add_argument('--total_trials', default=64, type=int, help="number of total trails for training")
@@ -642,6 +643,7 @@ if __name__ == "__main__":
     para_m = args.para_m
     cons_rate = args.cons_rate
     channel_selection = args.channel_selection
+    update_model = args.update_model
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -693,6 +695,7 @@ if __name__ == "__main__":
     args_dict.cons_rate = cons_rate
     args_dict.channel_selection = channel_selection
     args_dict.memoryBank_sources = {}
+    args_dict.update_model = update_model
 
     # data of our device, needs to be changed if matlab channels modified
     if channel_selection:

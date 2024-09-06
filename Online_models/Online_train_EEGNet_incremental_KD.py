@@ -72,6 +72,7 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
     session_manual_id = args_dict.session_manual_id
     para_m = args_dict.para_m
     cons_rate = args_dict.cons_rate
+    update_model = args_dict.update_model
 
     # orders
     if order == 1:
@@ -123,29 +124,33 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         cv_val_batch_size = 1
         sub_cv_val_loader = torch.utils.data.DataLoader(group_val_set, batch_size=cv_val_batch_size, shuffle=False) 
         if trial > 1: 
-            if not session_manual:
-                load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
-                if not os.path.exists(load_model_path_encoder):
-                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+            if not update_model:  # if not update model, use the best_model_0.pt
+                load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_0.pt')
                 model.load_state_dict(torch.load(load_model_path_encoder))
                 model = model.to(device)
-                print("load model parameter: ", load_model_path_encoder)
-            if session_manual and trial%update_wholeModel!=1:
-                load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
-                if not os.path.exists(load_model_path_encoder):
-                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
-                model.load_state_dict(torch.load(load_model_path_encoder))
-                model = model.to(device)
-                print("load model parameter: ", load_model_path_encoder)
-            if session_manual and trial%update_wholeModel==1 and session!=session_manual_id:
-                load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
-                if not os.path.exists(load_model_path_encoder):
-                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
-                model.load_state_dict(torch.load(load_model_path_encoder))
-                model = model.to(device)
-                print("load model parameter: ", load_model_path_encoder)
-
-        
+            else: 
+                if not session_manual:
+                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
+                    if not os.path.exists(load_model_path_encoder):
+                        load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+                    model.load_state_dict(torch.load(load_model_path_encoder))
+                    model = model.to(device)
+                    print("load model parameter: ", load_model_path_encoder)
+                if session_manual and trial%update_wholeModel!=1:
+                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
+                    if not os.path.exists(load_model_path_encoder):
+                        load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+                    model.load_state_dict(torch.load(load_model_path_encoder))
+                    model = model.to(device)
+                    print("load model parameter: ", load_model_path_encoder)
+                if session_manual and trial%update_wholeModel==1 and session!=session_manual_id:
+                    load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session))
+                    if not os.path.exists(load_model_path_encoder):
+                        load_model_path_encoder = os.path.join(result_save_subject_checkpointdir, 'best_model_{}.pt'.format(session-1))
+                    model.load_state_dict(torch.load(load_model_path_encoder))
+                    model = model.to(device)
+                    print("load model parameter: ", load_model_path_encoder)
+          
         predict_accu, class_predictions_array, labels_array, probabilities_array, _, accuracy_per_class = eval_model_confusion_matrix_fea(model, sub_cv_val_loader, device)
         #print(class_predictions_array)
         probabilities_array = softmax(probabilities_array.reshape((1,-1)))
@@ -168,6 +173,19 @@ def Online_train_classifierEEGNet_incremental_KD(args_dict):
         args_dict.accuracies_per_class.append(accuracy_per_class)
         if motor_class == 0.0:
             args_dict.accuracies_per_class_iterations_Rest.append([motor_class, predict_accu/100])
+
+        if (window+1) % (samples_online) == 0 and not update_model: 
+            accuracy_per_class_iter = compute_total_accuracy_per_class(args_dict.accuracies_per_class_iterations)
+            args_dict.accuracy_per_class_iters.append(accuracy_per_class_iter)
+            accuracy_per_class_iter_Rest = compute_total_accuracy_per_class(args_dict.accuracies_per_class_iterations_Rest)
+            print("******************Trial: {}*******************".format(trial))
+            print([accuracy_per_class_iter_Rest[0],accuracy_per_class_iter[1],accuracy_per_class_iter[2]])
+
+        if trial == total_trials and not update_model:
+            accuracy_save2csv(args_dict.predict_accuracies, result_save_subjectdir)
+            accuracy_iteration_plot(args_dict.predict_accuracies, result_save_subjectdir)
+            accuracy_perclass_save2csv(args_dict.accuracy_per_class_iters, result_save_subjectdir)
+            accuracy_perclass_iteration_plot(args_dict.accuracy_per_class_iters, result_save_subjectdir)
 
         return class_predictions_array, probabilities_label, probabilities_array
 
