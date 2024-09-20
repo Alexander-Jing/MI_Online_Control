@@ -597,6 +597,7 @@ if __name__ == "__main__":
     parser.add_argument('--para_m', default=0.99, type=float, help="hyper parameter for momentum updating")
     parser.add_argument('--cons_rate', default=0.01, type=float, help="hyper parameter for constractive loss")
     parser.add_argument('--data_preprocessing', default=False, type=str2bool, help="whether to use the data preprocessing method to normalized the data")
+    parser.add_argument('--bci_cap', default='EEG-fNIRS', type=str, help="which EEG Cap to choose, EEG or EEG-fNIRS")
     parser.add_argument('--channel_selection', default=False, type=str2bool, help="whether to change the channel selection settings in data preprocessing method to normalized the data")
     parser.add_argument('--session_manual', default=False, type=str2bool, help="if interrupted by the communication errors, use the session_manual mode")
     parser.add_argument('--session_manual_id', default=0, type=int, help="if interrupted by the communication errors, use the session_manual mode, input the session id,\
@@ -644,6 +645,7 @@ if __name__ == "__main__":
     cons_rate = args.cons_rate
     channel_selection = args.channel_selection
     update_model = args.update_model
+    bci_cap = args.bci_cap
     
     #save_folder = './Online_DataCollected' + str(sub_name)
     #sanity check:
@@ -696,32 +698,64 @@ if __name__ == "__main__":
     args_dict.channel_selection = channel_selection
     args_dict.memoryBank_sources = {}
     args_dict.update_model = update_model
+    args_dict.bci_cap = bci_cap
 
     # data of our device, needs to be changed if matlab channels modified
-    if channel_selection:
-        # the real experiment shows that, some electros cause high impedance, which greatly affect the results, 
-        # so we choose the channels on the matlab, so data from matlab are already selected in channels, 
-        # the args_dict.channel_list in server should also be modified, OZ, M1, M2, Fp1, Fp2 are removed 
-        args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','TP7','TP8',
-                        'O2','O1','P8','P4','PZ','P3','P7','T8','C4','CZ','C3',
-                        'T7','F8','F4','FZ','F3','F7'
-        ]
+    if bci_cap == 'EEG':
+        if channel_selection:
+            # the real experiment shows that, some electros cause high impedance, which greatly affect the results, 
+            # so we choose the channels on the matlab, so data from matlab are already selected in channels, 
+            # the args_dict.channel_list in server should also be modified, OZ, M1, M2, FP1, FP2 are removed 
+            args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','TP7','TP8',
+                            'O2','O1','P8','P4','PZ','P3','P7','T8','C4','CZ','C3',
+                            'T7','F8','F4','FZ','F3','F7'
+            ]
+        else:
+            # the origin channel settings in matlab, if not selecting channels in matlab, data from matlab use the original settings
+            args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
+                    'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
+                    'T7','F8','F4','FZ','F3','F7','FP2','FP1'
+            ]
+    elif bci_cap == 'EEG-fNIRS':  # we prepare another EEG-fNIRS cap, it is the corresponding channel_list
+        if channel_selection:
+            # the real experiment shows that, some electros cause high impedance, which greatly affect the results, 
+            # so we choose the channels on the matlab, so data from matlab are already selected in channels, 
+            # the args_dict.channel_list in server should also be modified, OZ, M1, M2, FP1, FP2 are removed 
+            args_dict.channel_list = ['O2','O1','P8','P4','PZ','P3','P7','CP4',
+                    'CPZ','CP3','T8','C4','CZ','C3','T7','FT12','FC4','FCZ','FC3','FT11','F12',
+                    'F8','F4','FZ','F3','F7','F11'
+            ]
+        else:
+            # the origin channel settings in matlab, if not selecting channels in matlab, data from matlab use the original settings
+            args_dict.channel_list = ['O2','OZ','O1','P8','P4','PZ','P3','P7','M2','M1','CP4',
+                    'CPZ','CP3','T8','C4','CZ','C3','T7','FT12','FC4','FCZ','FC3','FT11','F12',
+                    'F8','F4','FZ','F3','F7','F11','FP2','FP1'
+            ]
     else:
-        # the origin channel settings in matlab, if not selecting channels in matlab, data from matlab use the original settings
-        args_dict.channel_list = ['FCZ','FC4','CPZ','FT7','CP3','FT8','FC3','CP4','OZ','TP7','TP8',
-                'O2','O1','M2','P8','P4','PZ','P3','P7','M1','T8','C4','CZ','C3',
-                'T7','F8','F4','FZ','F3','F7','FP2','FP1'
-        ]
+        raise ValueError("Unrecognized bci_cap value")
 
     # selected data channels
-    args_dict.target_channel_list = [
-            'F7', 'F3', 'FZ', 'F4', 'F8',
-            'FT7','FC3','FCZ','FC4','FT8',
-            'T7', 'C3', 'CZ', 'C4', 'T8',
-            'TP7','CP3','CPZ','CP4','TP8',
-            'P7', 'P3', 'PZ', 'P4', 'P8',
-                    'O1', 'O2'
-    ]
+    if bci_cap == 'EEG':
+        args_dict.target_channel_list = [
+                'F7', 'F3', 'FZ', 'F4', 'F8',
+                'FT7','FC3','FCZ','FC4','FT8',
+                'T7', 'C3', 'CZ', 'C4', 'T8',
+                'TP7','CP3','CPZ','CP4','TP8',
+                'P7', 'P3', 'PZ', 'P4', 'P8',
+                        'O1', 'O2'
+        ]
+    elif bci_cap == 'EEG-fNIRS':  # we prepare another EEG-fNIRS cap, it is the corresponding channel_list
+        args_dict.target_channel_list = [
+                'F7', 'F3', 'FZ', 'F4', 'F8',
+                'F11','FC3','FCZ','FC4','F12',
+                'T7', 'C3', 'CZ', 'C4', 'T8',
+                'FT11','CP3','CPZ','CP4','FT12',
+                'P7', 'P3', 'PZ', 'P4', 'P8',
+                        'O1', 'O2'
+        ]
+    else:
+        raise ValueError("Unrecognized bci_cap value for model")
+    
     if args_dict.data_preprocessing:
         args_dict.data_online_store = np.empty((0,len(args_dict.target_channel_list)+1,512))  # data processing will add a new line
         args_dict.label_online_store = np.empty((0,))  # this is for the online update data, so that data will not be loaded again from the 1st trial when updating after trial n
@@ -971,4 +1005,6 @@ if __name__ == "__main__":
     elif mode == 'OnlineTest':
         SeverControlOnlineTest(args_dict)
         #SeverControlOnline(args_dict)
+    else:
+        raise ValueError("Unrecognized mode")
         
