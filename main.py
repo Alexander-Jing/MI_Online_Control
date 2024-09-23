@@ -909,7 +909,11 @@ if __name__ == "__main__":
             print('Successfully copied {} to {}'.format(Offline_path_encoder, restore_path_encoder))
         else:
             restore_file = best_validation_path
-            restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'best_model_{}.pt'.format(session_manual_id-1))  
+            if update_model:
+                restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'best_model_{}.pt'.format(session_manual_id-1))  
+            else:
+                restore_path_encoder = os.path.join(Online_result_save_rootdir, sub_name_online, restore_file, 'checkpoint', 'best_model_0.pt')  
+            
             args_dict.restore_path_encoder = restore_path_encoder
             print('manual mode, using the best model last session: {}'.format(restore_path_encoder))
         
