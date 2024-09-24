@@ -2770,7 +2770,8 @@ def save_accuracies_per_class_online(args_dict, file_name):
             'accuracies_per_class_iterations': args_dict.accuracies_per_class_iterations,
             'predict_accuracies': args_dict.predict_accuracies,
             'accuracies_per_class': args_dict.accuracies_per_class,
-            'accuracies_per_class_iterations_Rest':args_dict.accuracies_per_class_iterations_Rest
+            'accuracies_per_class_iterations_Rest':args_dict.accuracies_per_class_iterations_Rest,
+            'accuracy_per_class_iters':args_dict.accuracy_per_class_iters
         }, f)
 
 def load_accuracies_per_class_online(file_name):
@@ -2778,6 +2779,7 @@ def load_accuracies_per_class_online(file_name):
     # args_dict.accuracies_per_class_iterations.append([motor_class, predict_accu/100])
     # args_dict.predict_accuracies.append(predict_accu)
     # args_dict.accuracies_per_class.append(accuracy_per_class)
+    # args_dict.accuracy_per_class_iters.append(accuracy_per_class_iter)
     # the file_name is in the form of .pkl file
     file_name = os.path.join(file_name, 'accuracies_per_class_online.pkl')
     with open(file_name, 'rb') as f:
