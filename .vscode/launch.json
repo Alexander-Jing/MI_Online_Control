@@ -209,8 +209,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Wzh_offline",
-                "--sub_name_online", "Wzh_online",
+                "--sub_name_offline", "Wzh_compare_offline",
+                "--sub_name_online", "Wzh_compare_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num","160", //"120",
@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Wzh_offline",
-                "--sub_name_online", "Wzh_online",
+                "--sub_name_offline", "Wzh_compare_offline",
+                "--sub_name_online", "Wzh_compare_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -362,7 +362,7 @@
                 "--ip", "127.0.0.1",
                 "--para_m", "0.1",
                 "--cons_rate", "1.0",//"1.0",//"0.0", //"0.5",//"0.1",
-                "--update_model", "True",  // whether to update the model, in control experiment, it will not update the model
+                "--update_model", "False",  // whether to update the model, in control experiment, it will not update the model
             ],
             "env": {
                 "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
