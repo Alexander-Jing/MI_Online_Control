@@ -209,8 +209,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Qbt_compare_offline",
-                "--sub_name_online", "Qbt_compare_online",
+                "--sub_name_offline", "Wzq_compare_offline",
+                "--sub_name_online", "Wzq_compare_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num","160", //"120",
@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Qbt_compare_offline",
-                "--sub_name_online", "Qbt_compare_online",
+                "--sub_name_offline", "Wzq_compare_offline",
+                "--sub_name_online", "Wzq_compare_online",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
