@@ -123,13 +123,13 @@ def Offline_train_classifierEEGNet(args_dict):
                 epoch_validation_accuracy.append(val_accuracy)
 
                 #update is_best flag, only when the accuracies of two classes of motor imagery are larger than random choice
-                # if accuracy_per_class[0] > 0.33 and accuracy_per_class[1] > 0.33 and accuracy_per_class[2] > 0.33:
-                if accuracy_per_class[1] > 0.33 and accuracy_per_class[2] > 0.33:
+                #if accuracy_per_class[1] > 0.33 and accuracy_per_class[2] > 0.33:
+                if accuracy_per_class[0] > 0.33 and accuracy_per_class[1] > 0.33 and accuracy_per_class[2] > 0.33:
                     is_best = val_accuracy >= best_val_accuracy
 
                 if is_best:
                     best_val_accuracy = val_accuracy
-                    #is_best = False
+                    is_best = False
                     #torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model.statedict'))
                     torch.save(model.state_dict(), os.path.join(result_save_subject_checkpointdir, 'best_model.pt'))
                     
