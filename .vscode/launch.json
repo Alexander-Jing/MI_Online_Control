@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Gxy/Gxy_compare_offline",
-                "--sub_name_online", "Gxy_compare_online_simu",
+                "--sub_name_offline", "Lh/Lh_compare_offline",
+                "--sub_name_online", "Lh_compare_online_simu",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
