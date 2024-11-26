@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Wzq/Wzq_compare_offline",
-                "--sub_name_online", "Wzq_compare_online_simu",
+                "--sub_name_offline", "Wyx/Wyx_0923_compare_offline",
+                "--sub_name_online", "Wyx_compare_online_simu",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -356,7 +356,7 @@
                 "--best_validation_path", "lr0.001_dropout0.5",
                 "--data_preprocessing", "True",
                 "--channel_selection", "True",
-                "--bci_cap", "EEG-fNIRS",  // whether to use EEG-fNIRS Cap, the position of the cap is defined in curry8 0918.xml
+                "--bci_cap", "EEG",  // whether to use EEG-fNIRS Cap, the position of the cap is defined in curry8 0918.xml
                 "--session_manual", "False",  // manual mode, will continue from session_manual_id
                 "--session_manual_id", "1",
                 "--ip", "127.0.0.1",
