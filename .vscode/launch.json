@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Wzq/Wzq_compare_offline",
-                "--sub_name_online", "Wzq_compare_online_simu",
+                "--sub_name_offline", "Wzh/Wzh_compare_offline",
+                "--sub_name_online", "Wzh_compare_online_simu",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -357,8 +357,8 @@
                 "--data_preprocessing", "True",
                 "--channel_selection", "True",
                 "--bci_cap", "EEG-fNIRS",  // whether to use EEG-fNIRS Cap, the position of the cap is defined in curry8 0918.xml
-                "--session_manual", "False",  // manual mode, will continue from session_manual_id
-                "--session_manual_id", "1",
+                "--session_manual", "True",  // manual mode, will continue from session_manual_id
+                "--session_manual_id", "8",
                 "--ip", "127.0.0.1",
                 "--para_m", "0.5",
                 "--cons_rate", "1.0",//"1.0",//"0.0", //"0.5",//"0.1",
