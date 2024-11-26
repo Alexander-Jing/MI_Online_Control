@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Nkc/Nkc_compare_offline",
-                "--sub_name_online", "Nkc_compare_online_simu",
+                "--sub_name_offline", "Lh/Lh_compare_offline",
+                "--sub_name_online", "Lh_compare_online_simu",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
@@ -352,8 +352,8 @@
                 "--update_trial", "1",
                 "--update_wholeModel", "12",//"12",
                 "--total_trials", "96",
-                "--validation_path_manual", "False",
-                "--best_validation_path", "lr0.001_dropout0.5",
+                "--validation_path_manual", "True",
+                "--best_validation_path", "lr0.001_dropout0.0",
                 "--data_preprocessing", "True",
                 "--channel_selection", "True",
                 "--bci_cap", "EEG-fNIRS",  // whether to use EEG-fNIRS Cap, the position of the cap is defined in curry8 0918.xml
