@@ -327,8 +327,8 @@
             "args": [
                 "--seed", "42",
                 "--gpu_idx", "0",
-                "--sub_name_offline", "Thy/Thy_compare_offline",
-                "--sub_name_online", "Thy_compare_online_simu",
+                "--sub_name_offline", "Whz/Whz_compare_offline",
+                "--sub_name_online", "Whz_compare_online_simu",
                 "--Offline_folder_path", "${workspaceFolder}/Offline_DataCollected",
                 "--Online_folder_path", "${workspaceFolder}/Online_DataCollected",
                 "--windows_num", "160", //"149",
